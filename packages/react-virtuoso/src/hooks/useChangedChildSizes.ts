@@ -25,7 +25,7 @@ export default function useChangedListContentsSizes(
         scrollableElement = scrollableElement.parentElement!
       }
 
-      const windowScrolling = (scrollableElement.lastElementChild! as HTMLDivElement).dataset.viewportType! === 'window'
+      const windowScrolling = (scrollableElement.lastElementChild as HTMLDivElement | null)?.dataset.viewportType === 'window'
       let theWindow!: Window
       if (windowScrolling) {
         theWindow = scrollableElement.ownerDocument.defaultView!
