@@ -156,7 +156,7 @@ export default function useScrollTop(
     }
 
     if (horizontalDirection === true) {
-      location = { ...(location.behavior !== undefined ? { behavior: location.behavior } : {}), left: location.top }
+      location = { ...(location.behavior === undefined ? {} : { behavior: location.behavior }), left: location.top }
     }
 
     scrollerElement.scrollTo(location)
@@ -165,8 +165,8 @@ export default function useScrollTop(
   function scrollByCallback(location: ScrollToOptions) {
     if (horizontalDirection === true) {
       location = {
-        ...(location.behavior !== undefined ? { behavior: location.behavior } : {}),
-        ...(location.top !== undefined ? { left: location.top } : {}),
+        ...(location.behavior === undefined ? {} : { behavior: location.behavior }),
+        ...(location.top === undefined ? {} : { left: location.top }),
       }
     }
     scrollerRef.current!.scrollBy(location)

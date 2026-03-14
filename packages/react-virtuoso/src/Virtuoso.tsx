@@ -128,13 +128,13 @@ const Items = /*#__PURE__*/ React.memo(function VirtuosoItems({ showTopList = fa
           ? {
               display: 'inline-block',
               height: '100%',
-              marginLeft: deviation !== 0 ? deviation : alignToBottom ? 'auto' : 0,
+              marginLeft: deviation === 0 ? (alignToBottom ? 'auto' : 0) : deviation,
               paddingLeft: listState.offsetTop,
               paddingRight: listState.offsetBottom,
               whiteSpace: 'nowrap',
             }
           : {
-              marginTop: deviation !== 0 ? deviation : alignToBottom ? 'auto' : 0,
+              marginTop: deviation === 0 ? (alignToBottom ? 'auto' : 0) : deviation,
               paddingBottom: listState.offsetBottom,
               paddingTop: listState.offsetTop,
             }),
@@ -364,7 +364,7 @@ export function buildWindowScroller({ useEmitter, useEmitterValue, usePublisher 
       <ScrollerComponent
         ref={scrollerElRef}
         data-virtuoso-scroller={true}
-        style={{ position: 'relative', ...style, ...(totalListHeight !== 0 ? { height: totalListHeight + deviation } : undefined) }}
+        style={{ position: 'relative', ...style, ...(totalListHeight === 0 ? undefined : { height: totalListHeight + deviation }) }}
         {...props}
         {...contextPropIfNotDomElement(ScrollerComponent, context)}
       >
