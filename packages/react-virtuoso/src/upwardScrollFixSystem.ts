@@ -15,20 +15,6 @@ const isMobileSafari = simpleMemoize(() => {
 })
 
 type UpwardFixState = [number, ListItem<any>[], number, number]
-
-/**
- * Grace window during which `deviationOffset` is suppressed after a
- * consumer-computed prepend. The primary prepend scroll has already been
- * applied via the consumer's `computePrependedHeight`; any `totalHeight`
- * delta observed in the next few frames is ResizeObserver catching up on
- * the newly inserted rows. Before this suppression, that delta would
- * trigger a secondary `scrollBy`, producing a visible 50-200px jump.
- *
- * Only active when the consumer actually used the prop — upstream users
- * (no computer) are unaffected.
- */
-const UNSHIFT_GRACE_MS = 220
-
 /**
  * Fixes upward scrolling by calculating and compensation from changed item heights, using scrollBy.
  */
@@ -41,12 +27,6 @@ export const upwardScrollFixSystem = u.system(
     { log },
     { recalcInProgress },
   ]) => {
-    // Timestamp of the most recent consumer-driven prepend. Read by the
-    // deviationOffset filter below to skip the secondary compensation for a
-    // short grace window. Zero when the consumer hasn't been used, which
-    // keeps the filter fully transparent for upstream users.
-    let lastConsumerUnshiftAt = 0
-
     const deviationOffset = u.streamFromEmitter(
       u.pipe(
         listState,
@@ -75,14 +55,6 @@ export const upwardScrollFixSystem = u.system(
         u.filter(([amount]) => amount !== 0),
         u.withLatestFrom(scrollTop, scrollDirection, scrollingInProgress, isAtBottom, log, recalcInProgress),
         u.filter(([, scrollTop, scrollDirection, scrollingInProgress, , , recalcInProgress]) => {
-          // Suppress the secondary compensation within the grace window after a
-          // consumer-driven prepend — its scroll delta has already been applied
-          // via `computePrependedHeight`, and the ResizeObserver-driven size
-          // delta we would otherwise chase is exactly the residual estimation
-          // error the consumer accepts. See comment on UNSHIFT_GRACE_MS.
-          if (lastConsumerUnshiftAt !== 0 && Date.now() - lastConsumerUnshiftAt < UNSHIFT_GRACE_MS) {
-            return false
-          }
           return !recalcInProgress && !scrollingInProgress && scrollTop !== 0 && scrollDirection === UP
         }),
         u.map(([[amount], , , , , log]) => {
@@ -143,11 +115,6 @@ export const upwardScrollFixSystem = u.system(
           // Consumer-provided exact height computation takes precedence in non-grouped mode.
           // Grouped mode still uses the heuristic because the offset mixes items and group headers.
           if (computer && groupIndices.length === 0) {
-            // Arm the grace window that suppresses ResizeObserver-driven
-            // deviationOffset corrections for the next few frames — the
-            // consumer has already committed to a scroll delta and we don't
-            // want a late measurement pulling the viewport around.
-            lastConsumerUnshiftAt = Date.now()
             return computer(offset)
           }
           if (groupIndices.length === 0) {

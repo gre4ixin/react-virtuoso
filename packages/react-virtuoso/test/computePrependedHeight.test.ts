@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { listSystem } from '../src/listSystem'
-import { init, publish, subscribe } from '../src/urx'
+import { getValue, init, publish, subscribe } from '../src/urx'
 
 describe('computePrependedHeight', () => {
   it('uses the consumer-provided function for scroll compensation on prepend', () => {
