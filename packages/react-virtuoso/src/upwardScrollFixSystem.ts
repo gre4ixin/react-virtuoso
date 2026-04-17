@@ -23,7 +23,7 @@ export const upwardScrollFixSystem = u.system(
     { deviation, scrollBy, scrollingInProgress, scrollTop },
     { isAtBottom, isScrolling, lastJumpDueToItemResize, scrollDirection },
     { listState },
-    { beforeUnshiftWith, gap, shiftWithOffset, sizes },
+    { beforeUnshiftWith, computePrependedHeight, gap, shiftWithOffset, sizes },
     { log },
     { recalcInProgress },
   ]) => {
@@ -107,10 +107,15 @@ export const upwardScrollFixSystem = u.system(
     u.subscribe(
       u.pipe(
         beforeUnshiftWith,
-        u.withLatestFrom(sizes, gap),
-        u.map(([offset, { groupIndices, lastSize: defaultItemSize, sizeTree }, gap]) => {
+        u.withLatestFrom(sizes, gap, computePrependedHeight),
+        u.map(([offset, { groupIndices, lastSize: defaultItemSize, sizeTree }, gap, computer]) => {
           function getItemOffset(itemCount: number) {
             return itemCount * (defaultItemSize + gap)
+          }
+          // Consumer-provided exact height computation takes precedence in non-grouped mode.
+          // Grouped mode still uses the heuristic because the offset mixes items and group headers.
+          if (computer && groupIndices.length === 0) {
+            return computer(offset)
           }
           if (groupIndices.length === 0) {
             return getItemOffset(offset)

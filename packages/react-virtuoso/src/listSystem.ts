@@ -67,6 +67,7 @@ const featureGroup1System = u.system(
 export const listSystem = u.system(
   ([
     {
+      computePrependedHeight,
       data,
       defaultItemSize,
       firstItemIndex,
@@ -104,6 +105,7 @@ export const listSystem = u.system(
     )
 
     return {
+      computePrependedHeight,
       data,
       defaultItemHeight: defaultItemSize,
       firstItemIndex,

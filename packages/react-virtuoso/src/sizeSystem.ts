@@ -305,6 +305,7 @@ export const sizeSystem = u.system(
     const heightEstimates = u.statefulStream<number[] | undefined>(undefined)
     const itemSize = u.statefulStream<SizeFunction>((el, field) => correctItemSize(el, SIZE_MAP[field]))
     const data = u.statefulStream<Data>(undefined)
+    const computePrependedHeight = u.statefulStream<((prependedCount: number) => number) | undefined>(undefined)
     const gap = u.statefulStream(0)
     const initial = initialSizeState()
 
@@ -700,6 +701,7 @@ export const sizeSystem = u.system(
 
     return {
       beforeUnshiftWith,
+      computePrependedHeight,
       // input
       data,
       defaultItemSize,

@@ -196,6 +196,29 @@ export interface VirtuosoProps<Data, Context> extends ListRootProps {
   computeItemKey?: ComputeItemKey<Data, Context>
 
   /**
+   * When provided, this function is called by the virtualizer to compute the total pixel height
+   * of newly prepended items (items added to the start via a `firstItemIndex` decrement). The
+   * returned height is used for scroll compensation instead of the default
+   * `defaultItemHeight * prependedCount` heuristic.
+   *
+   * This lets consumers provide an accurate height calculation based on known item data (text
+   * length, known media dimensions, etc.), preventing the visual scroll jumps that occur when
+   * the default heuristic diverges from real rendered heights — common in chat-style lists with
+   * highly variable message heights.
+   *
+   * The function is invoked once per prepend batch, synchronously, right before the new items
+   * enter the size tree. Return the total expected height in pixels, including any inter-item
+   * gaps the consumer wants to account for.
+   *
+   * If the function is not provided, or if the list is in grouped mode, Virtuoso falls back to
+   * the default heuristic, preserving existing behavior.
+   *
+   * @param prependedCount The number of items added to the start of the list.
+   * @returns Total expected height in pixels.
+   */
+  computePrependedHeight?: (prependedCount: number) => number
+
+  /**
    * Additional context available in the custom components and content callbacks
    */
   context?: Context

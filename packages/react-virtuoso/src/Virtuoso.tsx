@@ -484,6 +484,7 @@ export const {
       totalCount: 'totalCount',
       groupCounts: 'groupCounts',
       topItemCount: 'topItemCount',
+      computePrependedHeight: 'computePrependedHeight',
       firstItemIndex: 'firstItemIndex',
       initialTopMostItemIndex: 'initialTopMostItemIndex',
       components: 'components',
