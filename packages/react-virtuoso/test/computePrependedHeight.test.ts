@@ -24,8 +24,14 @@ describe('computePrependedHeight', () => {
     publish(totalCount, 103)
     publish(firstItemIndex, 4000 - 3)
 
-    expect(computer).toHaveBeenCalledTimes(1)
-    expect(computer).toHaveBeenCalledWith(3)
+    // The computer is invoked twice per prepend: once in the scroll-compensation
+    // reaction (upwardScrollFixSystem) and once in the size-tree initialisation
+    // (sizeSystem) so the newly prepended rows enter the tree at the same per-row
+    // height the compensation assumed. Keeping the two in sync prevents a
+    // secondary deviation correction when ResizeObserver measures real heights.
+    expect(computer).toHaveBeenCalledTimes(2)
+    expect(computer).toHaveBeenNthCalledWith(1, 3)
+    expect(computer).toHaveBeenNthCalledWith(2, 3)
     expect(deviationSub).toHaveBeenCalledWith(3 * 137)
   })
 

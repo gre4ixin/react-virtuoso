@@ -540,11 +540,23 @@ export const sizeSystem = u.system(
     u.connect(
       u.pipe(
         unshiftWith,
-        u.withLatestFrom(sizes),
-        u.map(([unshiftWith, sizes]) => {
+        u.withLatestFrom(sizes, computePrependedHeight),
+        u.map(([unshiftWith, sizes, computer]) => {
           const groupedMode = sizes.groupIndices.length > 0
           const initialRanges: SizeRange[] = []
-          const defaultSize = sizes.lastSize
+          // When the consumer provides a height computer, spread its estimated
+          // total evenly across the new rows so the size tree matches the
+          // scroll compensation we just applied via the same computer. Without
+          // this the size tree still uses `defaultItemSize * count`, and once
+          // ResizeObserver measures the real heights the resulting totalHeight
+          // delta triggers a secondary `deviationOffset` scroll correction —
+          // which is the residual jitter consumers see even after the primary
+          // prepend compensation is pixel-perfect. Grouped mode is excluded
+          // because the offset mixes item and group-header counts.
+          const defaultSize =
+            !groupedMode && computer && unshiftWith > 0
+              ? computer(unshiftWith) / unshiftWith
+              : sizes.lastSize
           if (groupedMode) {
             const firstGroupSize = find(sizes.sizeTree, 0)!
 
