@@ -1,0 +1,42 @@
+{
+  "name": "react-virtuoso",
+  "version": "4.18.5-gre4ixin.1",
+  "description": "Fork of react-virtuoso with computePrependedHeight prop for accurate scroll compensation on prepend. Distributed via git URL from the npm-dist branch.",
+  "keywords": [
+    "chat",
+    "endless",
+    "feed",
+    "grid",
+    "infinite",
+    "list",
+    "load more",
+    "react",
+    "reactjs",
+    "scrolling",
+    "virtual",
+    "virtualized"
+  ],
+  "homepage": "https://github.com/gre4ixin/react-virtuoso",
+  "license": "MIT",
+  "author": "Petyo Ivanov (fork by gre4ixin)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gre4ixin/react-virtuoso.git"
+  },
+  "sideEffects": false,
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "peerDependencies": {
+    "react": ">=16 || >=17 || >= 18 || >= 19",
+    "react-dom": ">=16 || >=17 || >= 18 || >=19"
+  }
+}
