@@ -305,7 +305,7 @@ export const sizeSystem = u.system(
     const heightEstimates = u.statefulStream<number[] | undefined>(undefined)
     const itemSize = u.statefulStream<SizeFunction>((el, field) => correctItemSize(el, SIZE_MAP[field]))
     const data = u.statefulStream<Data>(undefined)
-    const computePrependedHeight = u.statefulStream<((prependedCount: number) => number) | undefined>(undefined)
+    const computePrependedHeight = u.statefulStream<((prependedCount: number) => number | number[]) | undefined>(undefined)
     const gap = u.statefulStream(0)
     const initial = initialSizeState()
 
@@ -544,19 +544,34 @@ export const sizeSystem = u.system(
         u.map(([unshiftWith, sizes, computer]) => {
           const groupedMode = sizes.groupIndices.length > 0
           const initialRanges: SizeRange[] = []
-          // When the consumer provides a height computer, spread its estimated
-          // total evenly across the new rows so the size tree matches the
-          // scroll compensation we just applied via the same computer. Without
-          // this the size tree still uses `defaultItemSize * count`, and once
-          // ResizeObserver measures the real heights the resulting totalHeight
-          // delta triggers a secondary `deviationOffset` scroll correction —
-          // which is the residual jitter consumers see even after the primary
-          // prepend compensation is pixel-perfect. Grouped mode is excluded
-          // because the offset mixes item and group-header counts.
-          const defaultSize =
-            !groupedMode && computer && unshiftWith > 0
-              ? computer(unshiftWith) / unshiftWith
-              : sizes.lastSize
+          // Consumer-provided height computer shapes:
+          //   number       → spread uniformly (total / count per row).
+          //   number[]     → per-row heights, each inserted as its own range.
+          // Uniform still leaves RO to find per-row mismatches on a tight
+          // schedule, which surfaces as a cascade of `lastJumpDueToItemResize`
+          // micro-corrections. A per-row array makes the size tree match
+          // reality immediately so RO converges silently.
+          let perRowHeights: number[] | null = null
+          let defaultSize = sizes.lastSize
+          if (!groupedMode && computer && unshiftWith > 0) {
+            const result = computer(unshiftWith)
+            if (Array.isArray(result)) {
+              if (result.length === unshiftWith) {
+                perRowHeights = result
+                // Fallback default for any code path that still reads it.
+                let sum = 0
+                for (const h of result) sum += h
+                defaultSize = sum / unshiftWith
+              } else {
+                // Shape mismatch — degrade to uniform from whatever we got.
+                let sum = 0
+                for (const h of result) sum += h
+                defaultSize = sum / unshiftWith
+              }
+            } else {
+              defaultSize = result / unshiftWith
+            }
+          }
           if (groupedMode) {
             const firstGroupSize = find(sizes.sizeTree, 0)!
 
@@ -620,6 +635,22 @@ export const sizeSystem = u.system(
                 ranges: initialRanges,
               }
             ).ranges
+          }
+
+          if (perRowHeights) {
+            // Each new row becomes its own singleton range — the size tree
+            // lands on the correct per-row value before ResizeObserver
+            // reports anything, so no follow-up deviation corrections fire.
+            const ranges: SizeRange[] = []
+            for (let i = 0; i < perRowHeights.length; i++) {
+              ranges.push({ startIndex: i, endIndex: i, size: perRowHeights[i]! })
+            }
+            // Existing entries preserve their "start at k, extend to next
+            // entry or infinity" semantics — shift each by unshiftWith.
+            for (const { k, v } of walk(sizes.sizeTree)) {
+              ranges.push({ startIndex: k + unshiftWith, endIndex: k + unshiftWith, size: v })
+            }
+            return ranges
           }
 
           return walk(sizes.sizeTree).reduce(

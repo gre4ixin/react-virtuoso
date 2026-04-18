@@ -114,8 +114,16 @@ export const upwardScrollFixSystem = u.system(
           }
           // Consumer-provided exact height computation takes precedence in non-grouped mode.
           // Grouped mode still uses the heuristic because the offset mixes items and group headers.
+          // The consumer can return a total (number) or per-row heights (number[]) — sum the
+          // array for scroll compensation; sizeSystem uses the per-row values for the size tree.
           if (computer && groupIndices.length === 0) {
-            return computer(offset)
+            const result = computer(offset)
+            if (Array.isArray(result)) {
+              let sum = 0
+              for (const h of result) sum += h
+              return sum
+            }
+            return result
           }
           if (groupIndices.length === 0) {
             return getItemOffset(offset)

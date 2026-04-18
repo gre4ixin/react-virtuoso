@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { listSystem } from '../src/listSystem'
-import { getValue, init, publish, subscribe } from '../src/urx'
+import { init, publish, subscribe } from '../src/urx'
 
 describe('computePrependedHeight', () => {
   it('uses the consumer-provided function for scroll compensation on prepend', () => {
@@ -33,6 +33,35 @@ describe('computePrependedHeight', () => {
     expect(computer).toHaveBeenNthCalledWith(1, 3)
     expect(computer).toHaveBeenNthCalledWith(2, 3)
     expect(deviationSub).toHaveBeenCalledWith(3 * 137)
+  })
+
+  it('accepts a per-row height array and sums it for scroll compensation', () => {
+    const { computePrependedHeight, defaultItemHeight, deviation, firstItemIndex, propsReady, scrollTop, totalCount, viewportHeight } =
+      init(listSystem)
+
+    publish(defaultItemHeight, 30)
+    publish(firstItemIndex, 4000)
+    publish(totalCount, 100)
+    publish(viewportHeight, 200)
+    publish(scrollTop, 0)
+    publish(propsReady, true)
+
+    // Per-row heights of wildly different sizes — the whole point of the
+    // array shape is that none of them are "average", and the size tree
+    // still lands on each row's true value.
+    const heights = [50, 120, 80]
+    const computer = vi.fn(() => heights)
+    publish(computePrependedHeight, computer)
+
+    const deviationSub = vi.fn()
+    subscribe(deviation, deviationSub)
+
+    publish(totalCount, 103)
+    publish(firstItemIndex, 4000 - 3)
+
+    expect(computer).toHaveBeenCalledTimes(2)
+    // Deviation matches the sum of the per-row heights, not the average times count.
+    expect(deviationSub).toHaveBeenCalledWith(50 + 120 + 80)
   })
 
   it('falls back to defaultItemHeight * count when computePrependedHeight is not provided', () => {
