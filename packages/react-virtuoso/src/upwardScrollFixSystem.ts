@@ -104,6 +104,14 @@ export const upwardScrollFixSystem = u.system(
       scrollBy
     )
 
+    // Set inside the map below whenever the consumer's computer was used for
+    // the current prepend batch; read by the subscribe callback to choose
+    // between the legacy two-rAF compensation (upstream-compatible) and the
+    // same-frame compensation we need to kill the one-frame content "drop"
+    // visible on large consumer-driven batches. Gurx runs map→subscribe
+    // synchronously, so the flag is never stale at read time.
+    let lastWasConsumerDriven = false
+
     u.subscribe(
       u.pipe(
         beforeUnshiftWith,
@@ -117,6 +125,7 @@ export const upwardScrollFixSystem = u.system(
           // The consumer can return a total (number) or per-row heights (number[]) — sum the
           // array for scroll compensation; sizeSystem uses the per-row values for the size tree.
           if (computer && groupIndices.length === 0) {
+            lastWasConsumerDriven = true
             const result = computer(offset)
             if (Array.isArray(result)) {
               let sum = 0
@@ -125,6 +134,7 @@ export const upwardScrollFixSystem = u.system(
             }
             return result
           }
+          lastWasConsumerDriven = false
           if (groupIndices.length === 0) {
             return getItemOffset(offset)
           }
@@ -157,6 +167,23 @@ export const upwardScrollFixSystem = u.system(
         })
       ),
       (offset) => {
+        if (lastWasConsumerDriven) {
+          // Same-frame compensation for consumer-driven prepend. Publishing
+          // deviation (transforms existing items down by offset) and scrollBy
+          // (bumps scrollTop by offset) synchronously lets the browser paint
+          // exactly one frame with net-zero visual movement. The upstream
+          // path below separates them across a requestAnimationFrame, which
+          // is visible as a one-frame "content fell down by N px" flash — at
+          // batch heights 1500-3000px that reads as "a few messages flew off
+          // the bottom of the screen" to the user.
+          u.publish(deviation, offset)
+          u.publish(scrollBy, { top: offset })
+          requestAnimationFrame(() => {
+            u.publish(deviation, 0)
+            u.publish(recalcInProgress, false)
+          })
+          return
+        }
         u.publish(deviation, offset)
         requestAnimationFrame(() => {
           u.publish(scrollBy, { top: offset })
