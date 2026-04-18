@@ -1706,27 +1706,35 @@ export declare interface VirtuosoProps<Data, Context> extends ListRootProps {
      */
     computeItemKey?: ComputeItemKey<Data, Context>;
     /**
-     * When provided, this function is called by the virtualizer to compute the total pixel height
-     * of newly prepended items (items added to the start via a `firstItemIndex` decrement). The
-     * returned height is used for scroll compensation instead of the default
-     * `defaultItemHeight * prependedCount` heuristic.
+     * When provided, this function is called by the virtualizer to compute the expected pixel
+     * heights of newly prepended items (items added to the start via a `firstItemIndex`
+     * decrement). The returned values feed both the scroll compensation applied to `scrollTop`
+     * and the initial sizes inserted into the size tree for the new rows — replacing the
+     * default `defaultItemHeight * prependedCount` heuristic.
      *
-     * This lets consumers provide an accurate height calculation based on known item data (text
-     * length, known media dimensions, etc.), preventing the visual scroll jumps that occur when
-     * the default heuristic diverges from real rendered heights — common in chat-style lists with
-     * highly variable message heights.
+     * The consumer can return either shape:
      *
-     * The function is invoked once per prepend batch, synchronously, right before the new items
-     * enter the size tree. Return the total expected height in pixels, including any inter-item
-     * gaps the consumer wants to account for.
+     * - `number` — total expected height for the whole batch. Virtuoso spreads it uniformly
+     *   across the `prependedCount` rows in the size tree (`total / count` per row).
+     * - `number[]` of length `prependedCount` — per-row heights. Each value lands on the
+     *   corresponding row in the size tree, and the sum is used for scroll compensation.
+     *   Prefer this shape when rows in the batch have widely varying heights (chat with
+     *   text / media / embeds / grouped messages); without it, ResizeObserver later
+     *   re-measures each row individually and each mismatch with the uniform estimate
+     *   triggers a small `lastJumpDueToItemResize` correction. With per-row heights the
+     *   size tree already matches reality, so those corrections don't fire.
      *
-     * If the function is not provided, or if the list is in grouped mode, Virtuoso falls back to
-     * the default heuristic, preserving existing behavior.
+     * Pixel-accurate height calculation relies on consumer knowledge of row contents — text
+     * length, known media dimensions, embed layout, etc. For chat-style lists this closes
+     * the main source of visible scroll jumps during prepend.
+     *
+     * If the function is not provided, or if the list is in grouped mode, Virtuoso falls back
+     * to the default heuristic, preserving existing behavior.
      *
      * @param prependedCount The number of items added to the start of the list.
-     * @returns Total expected height in pixels.
+     * @returns Total height in pixels, or a per-row height array.
      */
-    computePrependedHeight?: (prependedCount: number) => number;
+    computePrependedHeight?: (prependedCount: number) => number | number[];
     /**
      * Additional context available in the custom components and content callbacks
      */
