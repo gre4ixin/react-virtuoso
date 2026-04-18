@@ -1,6 +1,6 @@
 {
   "name": "react-virtuoso",
-  "version": "4.18.5-gre4ixin.5",
+  "version": "4.18.5-gre4ixin.6",
   "description": "Fork of react-virtuoso with computePrependedHeight prop for accurate scroll compensation on prepend. Distributed via git URL from the npm-dist branch.",
   "keywords": [
     "chat",
